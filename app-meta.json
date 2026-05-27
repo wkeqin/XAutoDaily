@@ -1,6 +1,6 @@
 {
-    "versionName": "3.0.35",
-    "versionCode": 26040718,
-    "updateTime": "2026-04-07 18:09:46",
-    "updateLog": "【功能】\n- 新增 王者营地每日任务\n- 新增 福利社领卷\n- 新增 QQ运动步数"
+    "versionName": "3.0.36",
+    "versionCode": 26052717,
+    "updateTime": "2026-05-27 17:20:25",
+    "updateLog": "【功能】\n- 新增 亲密空间任务\n- 修复 旧版cookie获取失败的问题"
 }
