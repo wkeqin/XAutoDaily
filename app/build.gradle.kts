@@ -301,7 +301,7 @@ dependencies {
     implementation("com.squareup.okhttp3:okhttp:4.9.3")
     // Other
     implementation("com.hankcs:aho-corasick-double-array-trie:1.2.3")
-    implementation("net.bytebuddy:byte-buddy-android:1.12.7")
+    implementation("net.bytebuddy:byte-buddy-android:1.18.8")
     implementation("com.charleskorn.kaml:kaml:0.44.0")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.2")
     // implementation ("org.apache-extras.beanshell:bsh:2.0b6")
