@@ -47,6 +47,7 @@ open class TicketManager : BaseFunction(
         )
 
         private val newTicketVersion = 9054 // v9.1.52 最后一个存在 getSuperKey 的正式版本
+        private val newPskeyVersion = 5282 // 不确定是哪个版本开始有的 这里直接切换 v9.0.0 为新的获取方法
     }
 
     private val ticketManagerMap = mutableMapOf<String, TicketManager>()
@@ -62,8 +63,10 @@ open class TicketManager : BaseFunction(
             thirdSigService = QApplicationUtil.appRuntime
                 .getRuntimeService(loadAs("com.tencent.mobileqq.thirdsig.api.IThirdSigService"), "all")
         }
-        pskeyManager = QApplicationUtil.appRuntime
-            .getRuntimeService(loadAs("com.tencent.mobileqq.pskey.api.IPskeyManager"), "all")
+        if (hostVersionCode > newPskeyVersion) {
+            pskeyManager = QApplicationUtil.appRuntime
+                .getRuntimeService(loadAs("com.tencent.mobileqq.pskey.api.IPskeyManager"), "all")
+        }
     }
 
     private fun getTicketManager(): TicketManager {
