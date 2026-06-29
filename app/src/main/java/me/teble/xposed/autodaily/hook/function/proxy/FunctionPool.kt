@@ -20,12 +20,53 @@ import me.teble.xposed.autodaily.hook.function.impl.YunDongStepsManager
 import me.teble.xposed.autodaily.hook.utils.QApplicationUtil
 import net.bytebuddy.ByteBuddy
 import net.bytebuddy.android.AndroidClassLoadingStrategy
+import net.bytebuddy.description.type.TypeDescription
 import net.bytebuddy.implementation.MethodDelegation
 import net.bytebuddy.matcher.ElementMatchers
+import java.io.File
 import java.lang.reflect.Modifier
 
 
 object FunctionPool {
+
+    /**
+     * 修复 Android 10+ "Writable dex file is not allowed" 问题。
+     *
+     * ByteBuddy 的 FILE_PROCESSOR 用 java.nio.file.Files.setPosixFilePermissions 设只读，
+     * 但某些 Android 版本上该 API 不可用，反射失败后回退到 Disabled（不设权限），
+     * 导致 DexFile 构造时 canWrite()=true → SecurityException。
+     *
+     * 修复：子类化 Wrapping，在 doLoad 里先 jar.setReadOnly() 再调 super。
+     * java.io.File.setReadOnly() 所有 Android 版本都支持。
+     */
+    private class ReadOnlyWrapping(privateDirectory: File) :
+        AndroidClassLoadingStrategy.Wrapping(privateDirectory) {
+
+        override fun doLoad(
+            classLoader: ClassLoader?,
+            typeDescriptions: MutableSet<TypeDescription>,
+            jar: File
+        ): MutableMap<TypeDescription, Class<*>> {
+            // 确保 dex jar 文件在 DexClassLoader 加载前是只读的
+            if (!jar.setReadOnly()) {
+                // setReadOnly 失败时尝试 POSIX 权限（兼容性更好）
+                try {
+                    val path = File::class.java.getMethod("toPath").invoke(jar)
+                    val perms = java.util.Collections.singleton(
+                        Class.forName("java.nio.file.attribute.PosixFilePermission")
+                            .getMethod("valueOf", String::class.java)
+                            .invoke(null, "OWNER_READ")
+                    )
+                    Class.forName("java.nio.file.Files")
+                        .getMethod("setPosixFilePermissions", Class.forName("java.nio.file.Path"), java.util.Set::class.java)
+                        .invoke(null, path, perms)
+                } catch (_: Throwable) {
+                    // 两种方式都失败，继续尝试加载，可能还是会崩
+                }
+            }
+            return super.doLoad(classLoader, typeDescriptions, jar)
+        }
+    }
 
     private val functionArray: Array<Class<out BaseFunction>> = arrayOf(
         FavoriteManager::class.java,
@@ -44,7 +85,7 @@ object FunctionPool {
     )
 
     private val functionMap = HashMap<Class<out BaseFunction>, BaseFunction>().let {
-        val strategy = AndroidClassLoadingStrategy.Wrapping(
+        val strategy = ReadOnlyWrapping(
             hostContext.getDir(
                 "generated",
                 Context.MODE_PRIVATE
